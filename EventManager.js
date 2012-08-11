@@ -241,8 +241,8 @@ var EventManager = ( function()
 	function exists( context, eventType, handler )
 	{
 		if( !checkValidity( context, eventType ) ) return false;
-		
 		var handlers = _handlers[ context ][ eventType ];
+		
 		var handlerFunction;
 		var i = handlers.length;
 		while( --i > -1 )
@@ -284,10 +284,10 @@ var EventManager = ( function()
 				handlers.splice( i, 1 );
 			}
 		}
-		if( isUndefined( context, eventType ) ) 
+		if( _handlers[ context ][ eventType ].length < 1 ) 
 		{
 			_handlers[ context ][ eventType ] 	= undefined; // remove from array if empty 
-			context[ 'uniqueID' ] 				= undefined;
+			delete _handlers[ context ][ eventType ];
 		}
 	}
 	
@@ -310,7 +310,7 @@ var EventManager = ( function()
 	{
 		if( context === _genericEvent ) return;
 		if( _handlers[ context.uniqueID ][ eventType ].length > 1  ) return;
-		
+
 		var fn = ( orientationEvent ) ? deviceMotionTargetHandler : _targetFunction;
 		if ( context.attachEvent && context !== window ) 
 		{
@@ -340,6 +340,21 @@ var EventManager = ( function()
 		} 
 		else context.removeEventListener( eventType, fn, false );
     	_contexts[ eventType ] = undefined;
+    	checkContext( context, eventType );
+	}
+	
+	/*
+	 * remove the context completely
+	 */
+	function checkContext( context, eventType )
+	{
+		var types;
+		for ( var evts in _handlers[ context.uniqueID ] ){ types = evts; }
+		if( types === undefined ) 
+		{
+			context.uniqueID = undefined;
+			delete _handlers[ context.uniqueID ] ;
+		}
 	}
 
 	// return orientation event
@@ -348,7 +363,6 @@ var EventManager = ( function()
 		if( eventType === 'deviceorientation' && window.DeviceOrientationEvent !== undefined ) return eventType;
 		return 'devicemotion'
 	}
-	
 	
 	/**
 	 * // check if orientation is available 
@@ -389,7 +403,7 @@ var EventManager = ( function()
 	function isUndefined( context, eventType ) 
 	{ 
 		if( _handlers[ context ] === undefined ) return true;
-		return ( ( _handlers[ context ].length === 0 ) || ( _handlers[ context ][ eventType ] === undefined ) ) 
+		return ( !( _handlers[ context ][ eventType ] ) || ( _handlers[ context ][ eventType ] === undefined ) ) 
 	}
 	
 	/*
@@ -400,6 +414,7 @@ var EventManager = ( function()
 	{
 		var definedType = getAutoEventType( eventType, handler, true );
 		if( !isMouseEvent( definedType.eventType ) ) return
+		
 		( add ) ? addListener( context, definedType.eventType, definedType.handler, id ) : removeListener( context, definedType.eventType, definedType.handler );
 	}
 	
